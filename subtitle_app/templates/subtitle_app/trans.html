@@ -1,0 +1,13 @@
+{% block content %}
+    {% for translate, form in data %}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <p>{{ translate.sentence }}   </p>
+            <p>{{ translate.translation }}   </p>
+            {{ form.as_p}}
+            <input name="id" type="hidden" value="{{ translate.id }}">
+            <button type="submit">Upload</button>
+        </form>
+    {% endfor %}
+    <p><a href="{% url 'model_form_upload'  %}">Return to home</a></p>
+{% endblock %}
