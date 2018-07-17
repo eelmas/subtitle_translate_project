@@ -1,20 +1,71 @@
 
-{% block content %}
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-      <button type="submit">Upload</button>
-  </form>
+    {% extends 'subtitle_app/base.html' %}
+          {% block content %}
+          <form method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="row">
+                <div class="col-md-2"></div>
+                  <div class="col-md-8">
+                      <div class="form-group mb-2">
+                            {{ form.description }}
+                      </div>
+                  </div>
+                <div class="col-md-2"></div>
+              </div>
 
-    {% for f in files %}
-        <p><a href="{% url 'trans' pk=f.pk %}">{{ f.description }}</a></p>
+              <div class="row">
+                  <div class="col-md-2"></div>
+                  <div class="col-md-8">
+                      <div class="custom-file">
+                          <label class="custom-file-label" for="id_document">Choose file</label>
+                          {{ form.document }}
+                      </div>
+                  </div>
+                  <div class="col-md-2"></div>
+              </div>
+
+              <div class="row">
+                  <div class="col-md-3"></div>
+                  <div class="col-md-2">
+                      <div class="form-group">
+                          <label for="id_source_language">source language</label>
+
+                          {{ form.source_language }}
+
+                      </div>
+                  </div>
+                  <div class="col-md-2"></div>
+                  <div class="col-md-2">
+                      <div class="form-group">
+                          <label for="id_target_language">target language</label>
+                          {{ form.target_language }}
+                      </div>
+                  </div>
+                  <div class="col-md-3"></div>
+              </div>
+
+              <div class="row">
+                  <div class="col-md-4"></div>
+                  <div class="col-md-4">
+                      <button type="submit" class="btn btn-xl btn-dark" >Upload</button>
+                  </div>
+                  <div class="col-md-4"></div>
+              </div>
+
+          </form>
+
+        
 
 
-        <p>{{ f.source_language }}</p>
 
-        <p>{{ f.target_language}}</p>
+          {% endblock %}
 
-    {% endfor %}
-    <p><a href="{% url 'logout'  %}">Logout</a></p>
 
-{% endblock %}
+
+
+
+
+
+
+
+

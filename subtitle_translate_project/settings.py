@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'subtitle_app',
 ]
 
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -121,6 +123,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT=os.path.join(BASE_DIR, 'subtitle_app/static')
 
 MEDIA_URL = '/media/'
 

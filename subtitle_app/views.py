@@ -1,4 +1,6 @@
 import os
+import time
+import self
 from django.contrib.auth.decorators import login_required
 import parser
 from django.shortcuts import render, redirect, get_object_or_404
@@ -13,75 +15,67 @@ import pysrt
 from django.contrib.auth.models import User
 from googletrans import Translator
 from .languages import LANGUAGES
-
+from itertools import islice
+import datetime
 import os
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/Elmas/Downloads/project-57963f325379.json"
-
-# Create your views here.
+from tqdm import tqdm
+from google.cloud import translate
+from hyper.contrib import HTTP20Adapter
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/Elmas/Documents/django_projects/subtitle_translate_project/google_auth.json"
+# GOOGLE_APPLICATION_CREDENTIALS="/Users/Elmas/Documents/django_projects/subtitle_translate_project/My\ Project\ 97243-204eb4c3ef96.json"
+from googletrans import urls, utils
 
 
 @login_required
 def model_form_upload(request):
     if request.method == 'POST':
-
         form = DocumentForm(request.POST, request.FILES)
-
-        #print(request.FILES)
         if form.is_valid():
-
-            Document.objects.create(user=request.user, description=form.cleaned_data['description'], document=form.cleaned_data['document'],source_language=request.POST['source_language'],target_language=request.POST['target_language'])
+            a=Document.objects.create(user=request.user, description=form.cleaned_data['description'], document=form.cleaned_data['document'],source_language=request.POST['source_language'],target_language=request.POST['target_language'])
+            print(a)
             return redirect('model_form_upload')
     else :
         form = DocumentForm()
-
     files = Document.objects.filter(user__id=request.user.id)
-
-
-    #print(Document.objects.all().values())
-    #print(request.user.id)
     return render(request, 'subtitle_app/subtitle_template.html', {'form': form, 'files':files,'LANGUAGES':LANGUAGES})
 
 
-
-
-
-def translate(request, pk):
-    translator = Translator()
-
-
-
+def translation(request, pk):
+    first=datetime.datetime.now()
+    #if make suggestion
     if request.method == 'POST':
         form = TranslateForm(request.POST)
         if form.is_valid():
+            #templatede hidden input ile suggestion yapılan translate objectinin idsini TranslateForm'a ekledik.
+            #bu sayede bu sayede sadece suggestion yapılan objecti elde edip(obj) onun üzerinde değişiklik yapmış olduk.
             obj = Translate.objects.get(id=form.cleaned_data['id'])
             obj.suggestion = form.cleaned_data['suggestion']
             obj.save()
+    #eğer suggestion yapmıyorsak, sadece altyazıları görüntülüyorsak:
+    #document pk yı url aracılığıyla gönderiyoruz
     else:
         file = Document.objects.get(pk=pk)
-        lines = []
         subs = pysrt.open(file.document.path, encoding='iso-8859-1')
-
-        for i in range(0, len(subs)):
+        l = len(subs)
+        select_source_language = file.source_language
+        select_target_language = file.target_language
+        translate_object_list = []
+        translate_client = translate.Client()
+        for i in tqdm(range(0, l)):
             sub = subs[i].text.replace("<i>", "").replace("</i>", "")
-            lines.append(sub)
-            l=len(subs)
-
-            if(Translate.objects.filter(document__pk=pk).count()<l):
-                select_source_language=file.source_language
-                select_target_language=file.target_language
-
-
-                translation=translator.translate(sub,src=select_source_language,dest=select_target_language)
-                Translate.objects.create(document=file, sentence=sub, suggestion='', translation=translation.text)
-
-
+            text = translate_client.translate(sub, target_language=select_target_language)
+            if Translate.objects.filter(document__pk=pk).count() < l:
+                translate_object_list.append(Translate(document=file, sentence=sub, suggestion='',translation=text['translatedText']))
+            else:
+                break
+        Translate.objects.bulk_create(translate_object_list)
     data = []
     for t in Translate.objects.filter(document__pk=pk):
         data.append((t, TranslateForm(initial={'id': t.id, 'suggestion': t.suggestion}, auto_id=True)))
-
-    return render(request, 'subtitle_app/trans.html', {'data': data})
-
-
+    files = Document.objects.filter(user__id=request.user.id)
+    second=datetime.datetime.now()
+    print(second-first)
+    return render(request, 'subtitle_app/trans.html', {'files': files,'data': data,'LANGUAGES': LANGUAGES})
 
 
 def signup(request):

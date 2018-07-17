@@ -1,0 +1,59 @@
+
+
+<!DOCTYPE html>
+{% load staticfiles %}
+<html>
+    <head>
+
+        <link rel="stylesheet" href="static/bootstrap-4.1.1-dist/css/bootstrap.css">
+        <link rel="stylesheet" href="static/css/main.css">
+        <link rel="stylesheet" href="static/custom-select-2/css/style.css">
+
+    </head>
+
+    <body>
+        <div id="deneme">
+
+
+                    {% load my_filters %}
+                    {% block content %}
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <div class="col">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="inputGroup-sizing-default">Enter file name</span>
+                                </div>
+                                <input type="text" class="form-control" name="description" maxlength="255" id="id_description">
+                            </div>
+
+
+                            <div>
+
+                                {{ form.source_language }}
+
+                                {{ form.target_language}}
+
+                            </div>
+
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" name="document" required="" id="id_document">
+
+                                <label class="custom-file-label" for="validatedCustomFile">Choose file...</label>
+                                <div class="invalid-feedback">Example invalid custom file feedback</div>
+                            </div>
+
+
+
+                            <button type="submit">Upload</button>
+                        </form>
+
+                        <p><a href="{% url 'logout' %}">Logout</a></p>c
+                    {% endblock %}
+
+
+        </div>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="static/custom-select-2/js/index.js"></script>
+    </body>
+</html>

@@ -1,13 +1,35 @@
+{% extends 'subtitle_app/base.html' %}
+{% load staticfiles %}
 {% block content %}
-    {% for translate, form in data %}
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <p>{{ translate.sentence }}   </p>
-            <p>{{ translate.translation }}   </p>
-            {{ form.as_p}}
-            <input name="id" type="hidden" value="{{ translate.id }}">
-            <button type="submit">Upload</button>
-        </form>
-    {% endfor %}
-    <p><a href="{% url 'model_form_upload'  %}">Return to home</a></p>
+	<div class="limiter">
+		<div class="wrap-table100">
+				<div class="table100">
+					<table>
+						<thead>
+							<tr class="table100-head">
+								<th class="column1">Sentence</th>
+								<th class="column2">Translate</th>
+								<th class="column3">Suggestion</th>
+								<th class="column4"></th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for translate, form in data %}
+							<form method="post" enctype="multipart/form-data">
+	  						{% csrf_token %}
+								<tr>
+									<td class="column1">{{ translate.sentence }}</td>
+									<td class="column2">{{ translate.translation }}</td>
+									<td class="column3">{{  form.suggestion }}</td>
+									<input name="id" type="hidden" value="{{ translate.id }}">
+									<td class="column4"><button type="submit" class="btn btn-info">Upload</button></td>
+								</tr>
+							</form>
+							{% endfor %}
+
+						</tbody>
+					</table>
+				</div>
+		</div>
+	</div>
 {% endblock %}
