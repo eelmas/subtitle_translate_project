@@ -107,5 +107,4 @@ LANGUAGES = {
     'he': 'Hebrew'
 }
 
-
 languages_tuple = list(LANGUAGES.items())

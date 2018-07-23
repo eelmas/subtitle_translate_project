@@ -22,7 +22,7 @@ SECRET_KEY = '(!@*)j7f-^-_fuut#s%d#c780!v&!8ftm0b=(s@i0a7=m9%dc#'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -38,9 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'subtitle_app',
 ]
-
-
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -54,12 +51,10 @@ MIDDLEWARE = [
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 ROOT_URLCONF = 'subtitle_translate_project.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -123,10 +118,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT=os.path.join(BASE_DIR, 'subtitle_app/static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'subtitle_app/static')
 
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-#GOOGLE_APPLICATION_CREDENTIALS="/Users/Elmas/Downloads/My\ Project\ 97243-dfb768d90da5.json"
