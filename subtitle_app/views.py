@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
@@ -14,7 +16,6 @@ from nltk import ngrams
 import re
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = \
     "/Users/Elmas/Documents/django_projects/subtitle_translate_project/google_auth.json"
-
 
 
 def n_gram(n, suggestion_list, test_sentence):
@@ -122,21 +123,22 @@ def translation(request, pk):
     # document pk yı url aracılığıyla gönderiyoruz
     else:
         file = Document.objects.get(pk=pk)
-        subs = pysrt.open(file.document.path, encoding='iso-8859-1')
+        subs = pysrt.open(file.document.path, encoding='iso-8859-9')
         length_subs = len(subs)
         # select_source_language = file.source_language
         select_target_language = file.target_language
         translate_object_list = []
         translate_client = translate.Client()
         for i in tqdm(range(0, length_subs)):
-            sub = subs[i].text.replace("<i>", "").replace("</i>", "")
+            sub = subs[i].text
             if Translate.objects.filter(document__pk=pk).count() < length_subs:
                 text = translate_client.translate(sub, target_language=select_target_language)
                 translate_object_list.append(Translate(document=file, sentence=sub, suggestion='', edit_translation='',
-                                                       translation=text['translatedText'].replace("&#39;", "")))
+                                                       translation=text['translatedText']))
             else:
                 break
         Translate.objects.bulk_create(translate_object_list)
+
     data = []
     for t in Translate.objects.filter(document__pk=pk):
         data.append((t, TranslateForm(initial={'id': t.id, 'suggestion': t.suggestion}, auto_id=True)))
