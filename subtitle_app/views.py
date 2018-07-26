@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
@@ -107,6 +108,19 @@ def model_form_upload(request):
                   {'form': form, 'files': files, 'LANGUAGES': LANGUAGES})
 
 
+def create_srt_file(subs,pk):
+    length_subs = len(subs)
+    for i in range(0, length_subs):
+        subs[i].text = Translate.objects.filter(document__pk=pk)[i].translation
+    document_name = str(Translate.objects.filter(document__pk=pk)[i].document.document)[10:]
+    document_path = '/Users/Elmas/Documents/django_projects/subtitle_translate_project/media/new_srt_files/' \
+                    + document_name
+    document_path_template = '/media/new_srt_files/' + document_name
+    subs.save(document_path, encoding='utf-8')
+    return document_path_template
+
+
+
 @login_required
 def translation(request, pk):
     first = datetime.datetime.now()
@@ -143,6 +157,7 @@ def translation(request, pk):
     for t in Translate.objects.filter(document__pk=pk):
         data.append((t, TranslateForm(initial={'id': t.id, 'suggestion': t.suggestion}, auto_id=True)))
     files = Document.objects.filter(user__id=request.user.id)
+    document_path_template = create_srt_file(subs,pk)
 
     for i in files:
         # aynı documentın translate leri
@@ -176,7 +191,8 @@ def translation(request, pk):
                     pass
     second = datetime.datetime.now()
     print(second - first)
-    return render(request, 'subtitle_app/trans.html', {'files': files, 'data': data, 'LANGUAGES': LANGUAGES})
+
+    return render(request, 'subtitle_app/trans.html', {'document_path_template': document_path_template, 'files': files, 'data': data, 'LANGUAGES': LANGUAGES})
 
 
 def signup(request):
