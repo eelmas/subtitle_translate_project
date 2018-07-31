@@ -29,5 +29,3 @@ class Suggestion(models.Model):
     user = models.ForeignKey('auth.user', related_name='suggestion_user', null=True, on_delete=models.CASCADE)
     trans_id = models.IntegerField(blank=True, null=True)
     suggestion_text = models.CharField(max_length=250, blank=True, null=True)
-    # probability = models.FloatField(blank=True, null=True)
-    # count = models.IntegerField(blank=True, null=True)

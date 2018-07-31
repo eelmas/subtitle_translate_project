@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from subtitle_app.models import Document, Translate, Suggestion
@@ -19,62 +18,77 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = \
     "/Users/Elmas/Documents/django_projects/subtitle_translate_project/google_auth.json"
 
 
-def n_gram(n, suggestion_list, test_sentence):
-    # print("sentence", test_sentence)
+def calculate_train_probability(n, suggestion_list):
     # train_dict kelimelerin 4(n)lü gruplar halinde olma olasılıklarını tutar.
     train_dict = {}
     # tüm suggestionların n'e göre split edilmiş hallerini split_list'e attık
     split_list = []
     # tüm suggestionların n-1'e göre split edilmiş hallerini minus_one_list'e attık
     minus_one_list = []
-    # bu döngüde tüm suggestionların n ve n-1'e göre split eilmiş hallerini listeye attık.
+    # bu döngüde tüm suggestionların n ve n-1'e göre split edilmiş hallerini listeye attık.
     # Daha sonra bunların miktarlarına göre probability bulacağız.
     for suggestion in suggestion_list:
         ngrams_list = ngrams(re.findall(r"[\w']+|[.,!?;]", suggestion), n)
         for i in ngrams_list:
             split_list.append(list(i))
-            minus_one_list.append(list(i)[:n-1])
-    # bu döngüde her n'li grupların probabilitysini bulup train dict'e attık.
+            minus_one_list.append(list(i)[:n - 1])
+    # bu dongude her n'li grupların probabilitysini bulup train dict'e attık.
     for suggestion in suggestion_list:
         ngrams_list = ngrams(re.findall(r"[\w']+|[:().,!?;]", suggestion), n)
         for i in ngrams_list:
             minus_one_sentence = i[:n - 1]
             gram_probability = (split_list.count(list(i)) / minus_one_list.count(list(minus_one_sentence)))
             train_dict[i] = gram_probability
+    return train_dict
+
+
+def n_gram(n, train_dict, test_sentence):
     # split_sentence test olarak verilen cümlenin split edilmiş ve nli gruplara ayrılmış tupleların listesi
     split_sentence = list(ngrams(re.findall(r"[\w']+|[.,!?;]", test_sentence), n))
-
     for i in range(0, len(split_sentence)):
         minus_one_sentence = split_sentence[i][:n - 1]
-        # my brother is
         max_probability = 0
         max_part = ()
         # testdeki cümlemizin n-1 kadar kelimesini trainde olasılıklarını belirlediğimiz kelimeler ile
         # kıyaslayarak olasılığını bulmaya çalışıyoruz.
-        for j in train_dict.keys():
-            if minus_one_sentence == j[:n-1]:
+
+        for train in train_dict.keys():
+            minus_one_sentence2=()
+
+
+            minus_one_train = train[:n-1]
+            for l in minus_one_sentence:
+                minus_one_sentence2=minus_one_sentence2 + (l.lower(),)
+
+            minus_one_train2=()
+            for g in minus_one_train:
+                minus_one_train2 = minus_one_train2+(g.lower(),)
+            if minus_one_sentence2 == minus_one_train2:
                 # en yüksek olasılığı bulmaya çalışıyoruz
-                if train_dict[j] > max_probability:
-                    max_probability = train_dict[j]
-                    max_part = j
-                    split_sentence[i] = tuple(max_part)
+                if train_dict[train] > max_probability:
+                    max_probability = train_dict[train]
+                    max_part = train
+                split_sentence[i] = tuple(max_part)
+            # eğer if e hiç giremezse cümle baştaki haliyle kalır.
             else:
                 pass
 
+        # yukarıda split_sentenceın bir elemanının br kelimesinde değişiklik yapılıyor
+        # altda ise bu değişikliği tüm elemanlardaki değişiklik yapılan o kelimeye uyguluyor
         if i < len(split_sentence) - 1:
-            a = 0
-            if len(split_sentence) < 4:
+            a = -2
+            if len(split_sentence) < n:
                 for k in range(i, len(split_sentence)-1):
                     next_part = list(split_sentence[k + 1])
-                    next_part[-a - 2] = split_sentence[i][-1]
+                    next_part[a] = split_sentence[i][-1]
                     split_sentence[k + 1] = tuple(next_part)
-                    a = a + 1
+                    a = a - 1
             else:
-                for k in range(i, 3):
+                for k in range(i, n-1):
                     next_part = list(split_sentence[k + 1])
-                    next_part[-a - 2] = split_sentence[i][-1]
+                    next_part[a] = split_sentence[i][-1]
                     split_sentence[k + 1] = tuple(next_part)
-                    a = a + 1
+                    a = a - 1
     return edit_sentence(split_sentence)
 
 
@@ -88,6 +102,7 @@ def edit_sentence(sentence_part_list):
     if len(sentence_part_list) > 1:
         for i in range(1, n):
             new_sentence = new_sentence + " " + str(sentence_part_list[i][-1])
+    new_sentence = re.sub(r' ([^A-Za-z0-9])', r'\1', new_sentence)
     return new_sentence
 
 
@@ -108,22 +123,10 @@ def model_form_upload(request):
                   {'form': form, 'files': files, 'LANGUAGES': LANGUAGES})
 
 
-def create_srt_file(subs,pk):
-    length_subs = len(subs)
-    for i in range(0, length_subs):
-        subs[i].text = Translate.objects.filter(document__pk=pk)[i].translation
-    document_name = str(Translate.objects.filter(document__pk=pk)[i].document.document)[10:]
-    document_path = '/Users/Elmas/Documents/django_projects/subtitle_translate_project/media/new_srt_files/' \
-                    + document_name
-    document_path_template = '/media/new_srt_files/' + document_name
-    subs.save(document_path, encoding='utf-8')
-    return document_path_template
-
-
-
 @login_required
 def translation(request, pk):
     first = datetime.datetime.now()
+    document_path_template = ""
     # if make suggestion
     if request.method == 'POST':
         form = TranslateForm(request.POST)
@@ -152,48 +155,61 @@ def translation(request, pk):
             else:
                 break
         Translate.objects.bulk_create(translate_object_list)
+        document_path_template = create_srt_file(subs, pk)
 
     data = []
     for t in Translate.objects.filter(document__pk=pk):
         data.append((t, TranslateForm(initial={'id': t.id, 'suggestion': t.suggestion}, auto_id=True)))
     files = Document.objects.filter(user__id=request.user.id)
-    document_path_template = create_srt_file(subs,pk)
-
-    for i in files:
-        # aynı documentın translate leri
-        same_document_translate_objects = Translate.objects.filter(document__id=i.id).exclude(suggestion='')
-        for trans in same_document_translate_objects:
-            # aynı translate cümlesinde tekrar bi öneri değişikliği yapılırsa update et.
-            if trans.id not in Suggestion.objects.values_list("trans_id", flat=True):
-                # get_or_create kllanmamızın sebebi her öneri yapıldığında tekrar aynı suggestion
-                # objelerinin create edilmesini önlemek için
-                Suggestion.objects.get_or_create(
-                    user=request.user,
-                    trans_id=trans.id,
-                    suggestion_text=trans.suggestion)
-            else:
-                # eğer aynı sentenceın suggestionı değiştirilirse object i update  et.
-                Suggestion.objects.filter(trans_id__contains=trans.id).update(suggestion_text=trans.suggestion)
-
+    get_suggestion(files,request)
     suggestion_list = Suggestion.objects.values_list('suggestion_text', flat=True)
+    n=3
     for i in files:
         # aynı documentın translate leri
         same_document_translate_objects = Translate.objects.filter(document__id=i.id)
         for trans in same_document_translate_objects:
-            if len(trans.translation.split()) < 4:
+            if len(trans.translation.split()) < n:
                 pass
             else:
-                new_sentence = n_gram(4, suggestion_list, trans.translation)
+                # train_dict suggestion cümlelerinin probabilitylerini tutan dict
+                train_dict = calculate_train_probability(n,suggestion_list)
+                new_sentence = n_gram(n, train_dict, trans.translation)
                 if not new_sentence == None:
-                    Translate.objects.filter(id=trans.id).update(edit_translation=new_sentence)
-                    # print("new_sentence", new_sentence)
+                    b=str(Translate.objects.filter(id=trans.id).values_list('translation', flat=True)[0])
+                    a = re.sub(r'[^\w\s]', '', b)
+                    new_sentence2= re.sub(r'[^\w\s]', '', new_sentence)
+                    if new_sentence2.replace(" ","") != a.replace(" ",""):
+                        Translate.objects.filter(id=trans.id).update(edit_translation=new_sentence[1:])
+
+                    else:
+                        print("*************")
+
                 else:
                     pass
     second = datetime.datetime.now()
     print(second - first)
 
-    return render(request, 'subtitle_app/trans.html', {'document_path_template': document_path_template, 'files': files, 'data': data, 'LANGUAGES': LANGUAGES})
+    return render(request, 'subtitle_app/trans.html', {'files': files, 'data': data, 'LANGUAGES': LANGUAGES,
+                                                       'document_path_template': document_path_template})
 
+
+def create_srt_file(subs,pk):
+    length_subs = len(subs)
+    for i in range(0, length_subs):
+        subs[i].text = Translate.objects.filter(document__pk=pk)[i].translation
+    document_name = str(Translate.objects.filter(document__pk=pk)[i].document.document)[10:]
+    document_path = '/Users/Elmas/Documents/django_projects/subtitle_translate_project/media/new_srt_files/' \
+                    + document_name
+    subs.save(document_path, encoding='utf-8')
+    document_path_template = '/media/new_srt_files/' + document_name
+    return document_path_template
+
+
+@login_required
+def file_remove(request, pk):
+    file = get_object_or_404(Document, pk=pk)
+    file.delete()
+    return redirect('model_form_upload')
 
 def signup(request):
     if request.method == 'POST':
@@ -208,3 +224,22 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'subtitle_app/signup.html', {'form': form})
+
+# Suggestionlardan suggestion model objectleri oluşturur.
+def get_suggestion(files,request):
+    for i in files:
+        # aynı documentın translate objelerindeki suggestionlar
+        same_document_translate_objects = Translate.objects.filter(document__id=i.id).exclude(suggestion='')
+        for trans in same_document_translate_objects:
+            if trans.id not in Suggestion.objects.values_list("trans_id", flat=True):
+                # get_or_create kllanmamızın sebebi her öneri yapıldığında tekrar aynı suggestion
+                # objelerinin create edilmesini önlemek için
+                Suggestion.objects.get_or_create(
+                    user=request.user,
+                    trans_id=trans.id,
+                    suggestion_text=trans.suggestion)
+            else:
+                # eğer aynı sentenceın suggestionı değiştirilirse object i update  et.
+                Suggestion.objects.filter(trans_id__contains=trans.id).update(suggestion_text=trans.suggestion)
+
+

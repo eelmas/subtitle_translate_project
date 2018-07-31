@@ -9,13 +9,14 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Stylish Portfolio - Start Bootstrap Template</title>
+    <title>Subtitle Translater</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="../../static/startbootstrap-stylish-portfolio-gh-pages/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <!-- Custom Fonts -->
     <link href="../../static/startbootstrap-stylish-portfolio-gh-pages/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
@@ -57,9 +58,12 @@
         </li>
           {% for f in files %}
               <li class="sidebar-nav-item ">
+                   <div id="block-container">
+                  <div id="block1"><a href="{% url 'trans' pk=f.pk %}"><p>{{ f.description }}</p>
+                      <p>{{ LANGUAGES|get_item:f.source_language }} -> {{ LANGUAGES|get_item:f.target_language}}</p></a></div>
 
-                  <a href="{% url 'trans' pk=f.pk %}"><p>{{ f.description }}</p>
-                      <p>{{ LANGUAGES|get_item:f.source_language }} -> {{ LANGUAGES|get_item:f.target_language}}</p></a>
+                  <div id="block2"><a class="trash" href="{% url 'file_remove' pk=f.pk %}"><i class="material-icons">delete</i></a></div>
+                  </div>
               </li>
           {% endfor %}
       </ul>
