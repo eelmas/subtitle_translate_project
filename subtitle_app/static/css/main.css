@@ -218,7 +218,7 @@ tbody tr:hover {
 
 .column5 {
  width: 70px;
- text-align: left;
+ text-align: center;
 }
 
 .column6 {
@@ -262,23 +262,21 @@ tbody tr:hover {
     top: 0;
   }
   table tbody tr td:nth-child(1):before {
-    content: "Date";
+    content: "Sentence";
   }
   table tbody tr td:nth-child(2):before {
-    content: "Order ID";
+    content: "Translate";
   }
   table tbody tr td:nth-child(3):before {
-    content: "Name";
+    content: "Suggestion";
   }
   table tbody tr td:nth-child(4):before {
-    content: "Price";
+    content: "Edit Translate";
   }
   table tbody tr td:nth-child(5):before {
-    content: "Quantity";
+    content: "";
   }
-  table tbody tr td:nth-child(6):before {
-    content: "Total";
-  }
+
 
   .column4,
   .column5,

@@ -12,7 +12,7 @@
 								<th class="column1">Sentence</th>
 								<th class="column2">Translate</th>
 								<th class="column3">Suggestion</th>
-                                <th class="column4">Suggestion</th>
+                                <th class="column4">Edit Translate</th>
 								<th class="column5">
                                     <a href={{ document_path_template }} download>
 	                                    <button type="button" class="btn btn-primary">Download File</button>
@@ -30,7 +30,7 @@
 									<td class="column3">{{  form.suggestion }}</td>
                                     <td class="column4">{{ translate.edit_translation|safe }}</td>
 									<input name="id" type="hidden" value="{{ translate.id }}">
-									<td class="column5"><button type="submit" class="btn btn-info">Upload</button></td>
+									<td class="column5"><button type="submit" class="btn btn-info">Save</button></td>
 								</tr>
 							</form>
 							{% endfor %}

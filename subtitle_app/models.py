@@ -13,6 +13,12 @@ class Document(models.Model):
     def _str_(self):
         return self.document.name
 
+class SubFile(models.Model):
+    document = models.ForeignKey('subtitle_app.Document', related_name='documents',
+                                 null=True, on_delete=models.CASCADE)
+    text = models.CharField(max_length=250, blank=True, null=True)
+    time = models.CharField(max_length=250, blank=True, null=True)
+
 
 class Translate(models.Model):
     document = models.ForeignKey('subtitle_app.Document', related_name='doct', null=True, on_delete=models.CASCADE)
