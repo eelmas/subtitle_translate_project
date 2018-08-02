@@ -13,6 +13,7 @@ class Document(models.Model):
     def _str_(self):
         return self.document.name
 
+
 class SubFile(models.Model):
     document = models.ForeignKey('subtitle_app.Document', related_name='documents',
                                  null=True, on_delete=models.CASCADE)

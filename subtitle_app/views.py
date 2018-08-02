@@ -21,20 +21,21 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = \
 
 
 def calculate_train_probability(n, suggestion_list):
-    # train_dict kelimelerin 4(n)lü gruplar halinde olma olasılıklarını tutar.
+    # train_dict holds the probability that the words are in groups.
     train_dict = {}
-    # tüm suggestionların n'e göre split edilmiş hallerini split_list'e attık
+    # split all the suggestions into n split_list
     split_list = []
-    # tüm suggestionların n-1'e göre split edilmiş hallerini minus_one_list'e attık
+    # I split all suggestions into n-1 split states into minus_one_list
     minus_one_list = []
-    # bu döngüde tüm suggestionların n ve n-1'e göre split edilmiş hallerini listeye attık.
-    # Daha sonra bunların miktarlarına göre probability bulacağız.
+    # in this loop we list all the suggestions split into n and n-1.
+    # We will then find a probability based on their quantities.
     for suggestion in suggestion_list:
+        suggestion.replace("<i>", "")
         ngrams_list = ngrams(re.findall(r"[\w']+|[.,!?;]", suggestion), n)
         for i in ngrams_list:
             split_list.append(list(i))
             minus_one_list.append(list(i)[:n - 1])
-    # bu dongude her n'li grupların probabilitysini bulup train dict'e attık.
+    # in this loop we found the probability of each group of n and went to train_dict.
     for suggestion in suggestion_list:
         ngrams_list = ngrams(re.findall(r"[\w']+|[:().,!?;]", suggestion), n)
         for i in ngrams_list:
@@ -45,14 +46,14 @@ def calculate_train_probability(n, suggestion_list):
 
 
 def n_gram(n, train_dict, test_sentence):
-    # split_sentence test olarak verilen cümlenin split edilmiş ve nli gruplara ayrılmış tupleların listesi
+    # split_sentence List of tuples split into nested groups that are given as test
     split_sentence = list(ngrams(re.findall(r"[\w']+|[.,!?;]", test_sentence), n))
     for i in range(0, len(split_sentence)):
         minus_one_sentence = split_sentence[i][:n - 1]
         max_probability = 0
         max_part = ()
-        # testdeki cümlemizin n-1 kadar kelimesini trainde olasılıklarını belirlediğimiz kelimeler ile
-        # kıyaslayarak olasılığını bulmaya çalışıyoruz.
+        # we are trying to find out the possibility of comparing the probability of
+        #  n-1 sentences in the test with the words that we have determined.
         for train in train_dict.keys():
             minus_one_sentence2 = ()
             minus_one_train = train[:n-1]
@@ -62,17 +63,17 @@ def n_gram(n, train_dict, test_sentence):
             for g in minus_one_train:
                 minus_one_train2 = minus_one_train2+(g.lower(),)
             if minus_one_sentence2 == minus_one_train2:
-                # en yüksek olasılığı bulmaya çalışıyoruz
+                # we are trying to find the highest probability
                 if train_dict[train] > max_probability:
                     max_probability = train_dict[train]
                     max_part = train
                 split_sentence[i] = tuple(max_part)
-            # eğer if e hiç giremezse cümle baştaki haliyle kalır.
+            # the sentence remains at the beginning.
             else:
                 pass
 
-        # yukarıda split_sentenceın bir elemanının br kelimesinde değişiklik yapılıyor
-        # altda ise bu değişikliği tüm elemanlardaki değişiklik yapılan o kelimeye uyguluyor
+        # a change is made to a member of split_sentence above
+        # at the bottom, this change applies to all the elements that are modified
         if i < len(split_sentence) - 1:
             a = -2
             if len(split_sentence) < n:
@@ -140,13 +141,12 @@ def translation(request, pk):
     if request.method == 'POST':
         form = TranslateForm(request.POST)
         if form.is_valid():
-            # templatede hidden input ile suggestion yapılan translate objectinin idsini TranslateForm'a ekledik.
-            # bu sayede sadece suggestion yapılan objecti elde edip(obj) onun üzerinde değişiklik yapmış olduk.
+            # In the template we added the id of the translate object suggested to the TranslateForm with hidden input.
+            # we only get the suggestion object and make changes on it.
             obj = Translate.objects.get(id=form.cleaned_data['id'])
             obj.suggestion = form.cleaned_data['suggestion']
             obj.save()
-    # eğer suggestion yapmıyorsak, sadece altyazıları görüntülüyorsak:
-    # document pk yı url aracılığıyla gönderiyoruz
+    # if we are not suggestion, if we are only viewing subtitles: we send document PK via url
     else:
         file = Document.objects.get(pk=pk)
         encode = detect(file)
@@ -156,7 +156,7 @@ def translation(request, pk):
             sub_file = open(file.document.path, encoding=encode.get('encoding'))
             read_file = sub_file.read()
             pattern = "\n\n"
-            match = re.search(pattern, read_file)
+            # match = re.search(pattern, read_file)
             lines = read_file.split("\n\n")
             length_subs = len(lines)
             sublist_object_list = []
@@ -175,10 +175,6 @@ def translation(request, pk):
         elif extension == '.srt':
             subs = pysrt.open(file.document.path, encoding='iso-8859-9')
             length_subs = len(subs)
-
-        #subs = pysrt.open(file.document.path, encoding='iso-8859-9')
-        #length_subs = len(subs)
-        # select_source_language = file.source_language
         select_target_language = file.target_language
         translate_object_list = []
         translate_client = translate.Client()
@@ -196,8 +192,6 @@ def translation(request, pk):
             document_path_template = create_sub_file(subs, pk)
         elif extension == ".srt":
             document_path_template = create_srt_file(subs, pk)
-
-
     data = []
     for t in Translate.objects.filter(document__pk=pk):
         data.append((t, TranslateForm(initial={'id': t.id, 'suggestion': t.suggestion}, auto_id=True)))
@@ -207,13 +201,13 @@ def translation(request, pk):
     suggestion_list = Suggestion.objects.values_list('suggestion_text', flat=True)
     n = 3
     for i in files:
-        # aynı documentın translate leri
+        # the same document translations
         same_document_translate_objects = Translate.objects.filter(document__id=i.id)
         for trans in same_document_translate_objects:
             if len(trans.translation.split()) < n:
                 pass
             else:
-                # train_dict suggestion cümlelerinin probabilitylerini tutan dict
+                # train_dict = dictionary which holds the probabilities of suggestion
                 train_dict = calculate_train_probability(n, suggestion_list)
                 new_sentence = n_gram(n, train_dict, trans.translation)
                 if not new_sentence == None:
@@ -221,7 +215,8 @@ def translation(request, pk):
                     a = re.sub(r'[^\w\s]', '', b)
                     new_sentence2 = re.sub(r'[^\w\s]', '', new_sentence)
                     if new_sentence2.replace(" ", "") != a.replace(" ", ""):
-                        Translate.objects.filter(id=trans.id).update(edit_translation=new_sentence[1:])
+                        Translate.objects.filter(id=trans.id).update(edit_translation=new_sentence[1:].
+                                                                     replace("39;", "'").replace("quot;", '"'))
 
                 else:
                     pass
@@ -234,10 +229,8 @@ def translation(request, pk):
 
 def create_srt_file(subs, pk):
     length_subs = len(subs)
-    a = 0
     for i in range(0, length_subs):
         subs[i].text = Translate.objects.filter(document__pk=pk)[i].translation
-        a = i
     document_name = str(Translate.objects.filter(document__pk=pk)[0].document.document)[10:]
     document_path = '/Users/Elmas/Documents/django_projects/subtitle_translate_project/media/new_srt_files/' \
                     + document_name
@@ -288,21 +281,19 @@ def signup(request):
     return render(request, 'subtitle_app/signup.html', {'form': form})
 
 
-# Suggestionlardan suggestion model objectleri oluşturur.
+# Generate suggestion model objects from suggestions.
 def get_suggestion(files, request):
     for i in files:
-        # aynı documentın translate objelerindeki suggestionlar
+        # suggestions in the translate objects of the same document
         same_document_translate_objects = Translate.objects.filter(document__id=i.id).exclude(suggestion='')
         for trans in same_document_translate_objects:
             if trans.id not in Suggestion.objects.values_list("trans_id", flat=True):
-                # get_or_create kllanmamızın sebebi her öneri yapıldığında tekrar aynı suggestion
-                # objelerinin create edilmesini önlemek için
+                # Whenever we make use of get_or_create, we make sure that the same suggestion
+                # objects are not created again.
                 Suggestion.objects.get_or_create(
                     user=request.user,
                     trans_id=trans.id,
                     suggestion_text=trans.suggestion)
             else:
-                # eğer aynı sentenceın suggestionı değiştirilirse object i update  et.
+                # update the object if the same sentence's suggestion is changed.
                 Suggestion.objects.filter(trans_id__contains=trans.id).update(suggestion_text=trans.suggestion)
-
-
